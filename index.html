@@ -1,1 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f3d20">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Afro Shops">
+<meta name="description" content="Guide communautaire des commerces afro de Sarrebruck">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f3d20'/%3E%3Ctext x='256' y='300' font-size='200' text-anchor='middle'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<title>Afro Shops Sarrebruck</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+--bg: #fafafa; --panel: #ffffff; --border: #e5e5e5;
+--ink: #1a1a1a; --ink-dim: #777; --ink-faint: #aaa;
+--green-dark: #0f3d20; --green: #1a5c32; --green-mid: #2d8a4e; --green-light: #e3f5e9;
+--gold: #d4a017; --gold-light: #fdf5e3;
+--info: #4a6cf7; --info-light: #eef4ff;
+--red: #c0392b; --red-light: #fce8e6;
+--radius: 12px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; padding: 0 0 3rem; font-size: 15px; line-height: 1.5; max-width: 800px; margin: 0 auto; }
 
+.lang-selector { display: flex; justify-content: center; gap: 0.3rem; padding: 0.6rem 1rem; margin-bottom: 0.6rem; }
+.lang-btn { padding: 0.4rem 0.8rem; border-radius: 8px; border: 1.5px solid var(--border); background: var(--panel); font-size: 0.78rem; font-weight: 600; font-family: inherit; cursor: pointer; color: var(--ink-dim); display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s; }
+.lang-btn.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); box-shadow: 0 2px 8px rgba(15,61,32,0.25); }
+.lang-btn .flag { font-size: 1rem; line-height: 1; }
+
+.app-header { background: linear-gradient(135deg, #0f3d20 0%, #1a5c32 50%, #2d8a4e 100%); padding: 1.8rem 1rem 1.6rem; text-align: center; color: #fff; position: relative; overflow: hidden; border-radius: 0 0 20px 20px; margin-bottom: 1rem; box-shadow: 0 4px 20px rgba(15,61,32,0.35); }
+.app-header::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.08) 1px, transparent 1px), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 30px 30px, 45px 45px; pointer-events: none; }
+.app-logo { font-size: 2.6rem; margin-bottom: 0.3rem; position: relative; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
+.app-title { font-size: 1.45rem; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 0.15rem; position: relative; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+.app-subtitle { font-size: 0.82rem; font-style: italic; margin-bottom: 0.7rem; position: relative; color: #f0e0b0; text-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+.app-tags { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; position: relative; }
+.app-tag { padding: 0.28rem 0.65rem; border-radius: 20px; background: rgba(255,255,255,0.22); backdrop-filter: blur(8px); font-size: 0.68rem; font-weight: 600; color: #ffffff; border: 1px solid rgba(255,255,255,0.4); text-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+
+.view-toggle { display: flex; gap: 0.4rem; padding: 0 1rem; margin-bottom: 0.8rem; }
+.view-btn { flex: 1; padding: 0.65rem 1rem; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer; color: var(--ink-dim); display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: all 0.2s; }
+.view-btn.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); box-shadow: 0 2px 8px rgba(15,61,32,0.3); }
+
+.map-wrapper { margin: 0 1rem 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.06); display: none; }
+.map-wrapper.visible { display: block; }
+#map { height: 380px; width: 100%; background: #e8e8e8; }
+.custom-marker { background: linear-gradient(135deg, #1a5c32, #2d8a4e); width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+.custom-marker span { transform: rotate(45deg); font-size: 14px; line-height: 1; }
+.custom-marker.hair { background: linear-gradient(135deg, #b8860b, #d4a017); }
+.custom-marker.mixed { background: linear-gradient(135deg, #3a5bd9, #4a6cf7); }
+.custom-marker.restaurant { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+.leaflet-popup-content-wrapper { border-radius: 10px; }
+.leaflet-popup-content { margin: 0.6rem 0.8rem; font-family: inherit; font-size: 0.82rem; line-height: 1.4; }
+.leaflet-popup-content strong { display: block; margin-bottom: 0.2rem; font-size: 0.88rem; }
+.leaflet-popup-content .popup-addr { color: #777; font-size: 0.75rem; margin-bottom: 0.5rem; }
+.leaflet-popup-content .popup-btn { display: inline-block; background: linear-gradient(135deg, #1a5c32, #2d8a4e); color: #fff; text-decoration: none; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.72rem; font-weight: 600; margin-right: 0.3rem; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; padding: 0 1rem; }
+.filter-btn { padding: 0.5rem 1rem; border-radius: 20px; border: 1.5px solid var(--border); background: var(--panel); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; color: var(--ink-dim); }
+.filter-btn.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); box-shadow: 0 2px 8px rgba(15,61,32,0.3); }
+
+.shop-count { font-size: 0.75rem; color: var(--ink-dim); margin-bottom: 0.8rem; padding: 0 1rem; font-weight: 500; }
+.shop-list { display: flex; flex-direction: column; gap: 0.8rem; padding: 0 1rem; }
+.shop-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; transition: all 0.25s; animation: fadeIn 0.35s ease; }
+.shop-card:hover { border-color: #d0d0d0; box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateY(-1px); }
+.shop-card.highlight { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,138,78,0.15); animation: pulse 1s ease; }
+.shop-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem; margin-bottom: 0.5rem; }
+.shop-name { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+.shop-category { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.25rem 0.55rem; border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+.cat-food { background: var(--green-light); color: var(--green-dark); }
+.cat-hair { background: var(--gold-light); color: #b8860b; }
+.cat-mixed { background: var(--info-light); color: var(--info); }
+.cat-restaurant { background: var(--red-light); color: var(--red); }
+.shop-address { font-size: 0.82rem; color: var(--ink-dim); margin-bottom: 0.35rem; display: flex; align-items: flex-start; gap: 0.35rem; }
+.shop-hours { font-size: 0.78rem; color: var(--ink-dim); margin-bottom: 0.4rem; line-height: 1.45; }
+.shop-phone { font-size: 0.82rem; color: var(--ink); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+.shop-phone a { color: var(--info); text-decoration: none; font-weight: 500; }
+.shop-notes { font-size: 0.73rem; color: var(--ink-faint); font-style: italic; margin-bottom: 0.6rem; line-height: 1.4; }
+.shop-actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+.btn-map, .btn-locate { flex: 1; min-width: 120px; padding: 0.65rem 0.8rem; border-radius: 8px; border: none; background: linear-gradient(135deg, #1a5c32, #2d8a4e); color: #fff; font-size: 0.78rem; font-weight: 600; font-family: inherit; cursor: pointer; text-decoration: none; text-align: center; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.3rem; box-shadow: 0 2px 6px rgba(26,92,50,0.25); }
+.btn-locate { background: var(--panel); color: var(--green-dark); border: 1.5px solid var(--green); box-shadow: none; }
+.btn-call { flex: 0 0 auto; padding: 0.65rem 0.9rem; border-radius: 8px; border: 1.5px solid var(--border); background: var(--panel); font-size: 0.78rem; font-weight: 600; font-family: inherit; cursor: pointer; text-decoration: none; color: var(--ink); display: flex; align-items: center; gap: 0.3rem; }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--ink-dim); font-size: 0.85rem; display: none; }
+footer { margin-top: 2.5rem; text-align: center; font-size: 0.7rem; color: var(--ink-faint); line-height: 1.5; padding: 0 1rem; }
+.install-banner { position: fixed; bottom: 1rem; left: 1rem; right: 1rem; background: linear-gradient(135deg, #0f3d20, #2d8a4e); color: #fff; padding: 0.9rem 1rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); display: none; align-items: center; gap: 0.8rem; z-index: 1000; max-width: 500px; margin: 0 auto; }
+.install-banner.visible { display: flex; }
+.install-banner .ib-icon { font-size: 1.8rem; flex-shrink: 0; }
+.install-banner .ib-text { flex: 1; font-size: 0.8rem; line-height: 1.35; }
+.install-banner .ib-text strong { font-weight: 700; display: block; margin-bottom: 0.1rem; }
+.install-banner button { background: #fff; color: var(--green-dark); border: none; padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; font-family: inherit; cursor: pointer; flex-shrink: 0; }
+.install-banner .ib-close { background: transparent; color: #fff; padding: 0.3rem; font-size: 1.2rem; line-height: 1; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(45,138,78,0.15); } 50% { box-shadow: 0 0 0 6px rgba(45,138,78,0.25); } }
+</style>
+</head>
+<body>
+
+<div class="lang-selector">
+<button class="lang-btn active" data-lang="fr"><span class="flag">🇫🇷</span> Français</button>
+<button class="lang-btn" data-lang="de"><span class="flag">🇩🇪</span> Deutsch</button>
+<button class="lang-btn" data-lang="en"><span class="flag">🇬🇧</span> English</button>
+</div>
+
+<header class="app-header">
+<div class="app-logo">🌍</div>
+<h1 class="app-title" id="t-title">AFRO SHOPS</h1>
+<p class="app-subtitle" id="t-subtitle">Sarrebruck & alentours</p>
+<div class="app-tags">
+<span class="app-tag" id="t-tag1">🛒 Alimentation</span>
+<span class="app-tag" id="t-tag2">💇 Coiffure</span>
+<span class="app-tag" id="t-tag3">🍽️ Restaurants</span>
+</div>
+</header>
+
+<div class="view-toggle">
+<button class="view-btn active" id="view-map-btn"><span id="t-map">🗺️ Carte</span></button>
+<button class="view-btn" id="view-list-btn"><span id="t-list">📋 Liste</span></button>
+</div>
+
+<div class="map-wrapper visible" id="map-wrapper">
+<div id="map"></div>
+</div>
+
+<div class="filters" id="filters">
+<button class="filter-btn active" data-filter="all" id="f-all">Tous</button>
+<button class="filter-btn" data-filter="food" id="f-food">🛒 Alimentation</button>
+<button class="filter-btn" data-filter="hair" id="f-hair">💇 Coiffure & Beauté</button>
+<button class="filter-btn" data-filter="mixed" id="f-mixed">🏪 Mixte</button>
+<button class="filter-btn" data-filter="restaurant" id="f-restaurant">🍽️ Restaurants</button>
+</div>
+
+<div class="shop-count" id="shop-count"></div>
+<div class="shop-list" id="shop-list"></div>
+<div class="empty-state" id="empty-state">Aucune enseigne ne correspond à ce filtre.</div>
+
+<footer>
+<span id="t-footer1">Carte : © OpenStreetMap · Leaflet</span><br>
+<span id="t-footer2">Données : annuaires locaux — horaires indicatifs, appelez avant de vous déplacer.</span>
+</footer>
+
+<div class="install-banner" id="install-banner">
+<div class="ib-icon">📲</div>
+<div class="ib-text"><strong id="t-install-title">Installer l'application</strong><span id="t-install-text">Ajoutez Afro Shops à votre écran d'accueil</span></div>
+<button id="install-btn">Installer</button>
+<button class="ib-close" id="install-close">✕</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+const TRANSLATIONS = {
+fr: {
+title: 'AFRO SHOPS',
+subtitle: 'Sarrebruck & alentours',
+tag1: '🛒 Alimentation', tag2: '💇 Coiffure', tag3: '🍽️ Restaurants',
+map: '🗺️ Carte', list: '📋 Liste',
+all: 'Tous', food: '🛒 Alimentation', hair: '💇 Coiffure & Beauté',
+mixed: '🏪 Mixte', restaurant: '🍽️ Restaurants',
+count: (n) => n + ' enseigne' + (n > 1 ? 's' : '') + ' trouvée' + (n > 1 ? 's' : ''),
+empty: 'Aucune enseigne ne correspond à ce filtre.',
+footer1: 'Carte : © OpenStreetMap · Leaflet',
+footer2: 'Données : annuaires locaux — horaires indicatifs, appelez avant de vous déplacer.',
+installTitle: "Installer l'application",
+installText: "Ajoutez Afro Shops à votre écran d'accueil",
+installBtn: 'Installer',
+seeMap: '📌 Voir sur la carte', route: '🗺️ Itinéraire', call: '📞 Appeler',
+catFood: 'Alimentation', catHair: 'Coiffure', catMixed: 'Mixte', catRestaurant: 'Restaurant',
+popupRoute: '🗺️ Itinéraire', popupCall: '📞 Appeler'
+},
+de: {
+title: 'AFRO SHOPS',
+subtitle: 'Saarbrücken & Umgebung',
+tag1: '🛒 Lebensmittel', tag2: '💇 Friseur', tag3: '🍽️ Restaurants',
+map: '🗺️ Karte', list: '📋 Liste',
+all: 'Alle', food: '🛒 Lebensmittel', hair: '💇 Friseur & Beauty',
+mixed: '🏪 Gemischt', restaurant: '🍽️ Restaurants',
+count: (n) => n + ' Geschäft' + (n > 1 ? 'e' : '') + ' gefunden',
+empty: 'Kein Geschäft entspricht diesem Filter.',
+footer1: 'Karte: © OpenStreetMap · Leaflet',
+footer2: 'Daten: lokale Verzeichnisse — Öffnungszeiten können variieren, rufen Sie vorher an.',
+installTitle: 'App installieren',
+installText: 'Fügen Sie Afro Shops zu Ihrem Startbildschirm hinzu',
+installBtn: 'Installieren',
+seeMap: '📌 Auf Karte zeigen', route: '🗺️ Route', call: '📞 Anrufen',
+catFood: 'Lebensmittel', catHair: 'Friseur', catMixed: 'Gemischt', catRestaurant: 'Restaurant',
+popupRoute: '🗺️ Route', popupCall: '📞 Anrufen'
+},
+en: {
+title: 'AFRO SHOPS',
+subtitle: 'Saarbrücken & surroundings',
+tag1: '🛒 Groceries', tag2: '💇 Hair', tag3: '🍽️ Restaurants',
+map: '🗺️ Map', list: '📋 List',
+all: 'All', food: '🛒 Groceries', hair: '💇 Hair & Beauty',
+mixed: '🏪 Mixed', restaurant: '🍽️ Restaurants',
+count: (n) => n + ' shop' + (n > 1 ? 's' : '') + ' found',
+empty: 'No shop matches this filter.',
+footer1: 'Map: © OpenStreetMap · Leaflet',
+footer2: 'Data: local directories — hours may vary, call before visiting.',
+installTitle: 'Install the app',
+installText: 'Add Afro Shops to your home screen',
+installBtn: 'Install',
+seeMap: '📌 Show on map', route: '🗺️ Route', call: '📞 Call',
+catFood: 'Groceries', catHair: 'Hair', catMixed: 'Mixed', catRestaurant: 'Restaurant',
+popupRoute: '🗺️ Route', popupCall: '📞 Call'
+}
+};
+
+const SHOPS = [
+{ id:'afro-market', name:"Afro-Market (Lina's Afroshop)", category:'food',
+address:'Richard-Wagner-Straße 58-60, 66111 Saarbrücken', phone:'+49 179 1190828',
+hours:'Lun–Ven : 10h30–18h00 · Sam : 10h30–14h00 · Dim & fériés : fermé',
+notes:'Accès fauteuil roulant : oui', lat:49.2380, lng:6.9970,
+mapsQuery:'Afro-Market+Richard-Wagner-Straße+58-60+Saarbrücken' },
+{ id:'akwaba', name:'Akwaba Boutique Afro Shop', category:'food',
+address:'Mainzer Straße 121, 66121 Saarbrücken', phone:null, hours:null,
+notes:"Gérant : N'Gnoli Béssè · Accès fauteuil roulant : non",
+lat:49.2330, lng:7.0085,
+mapsQuery:'Akwaba+Boutique+Afro+Shop+Mainzer+Straße+121+Saarbrücken' },
+{ id:'ocean-grace', name:'Ocean de Grâce Afro Shop', category:'mixed',
+address:'Berliner Promenade, 66111 Saarbrücken', phone:null,
+hours:'Lun–Sam : 10h00–20h00 · Dim & fériés : fermé',
+notes:'Accès fauteuil roulant : oui', lat:49.2360, lng:6.9955,
+mapsQuery:'Ocean+de+Grâce+Afro+Shop+Berliner+Promenade+Saarbrücken' },
+{ id:'josy', name:'Josy Afro Shop', category:'food',
+address:'Richard-Wagner-Straße 17, 66111 Saarbrücken', phone:null,
+hours:'Lun–Sam : 08h00–20h00 · Dim : fermé',
+notes:'Horaires à confirmer par téléphone', lat:49.2385, lng:6.9965,
+mapsQuery:'Josy+Afro+Shop+Richard-Wagner-Straße+17+Saarbrücken' },
+{ id:'gye-nyame', name:'Gye Nyame Afro Shop', category:'hair',
+address:'Klausenerstraße 20, 66115 Saarbrücken', phone:'+49 681 93556245',
+hours:'Lun–Jeu & Sam : 10h00–20h00 · Ven : 10h00–19h00 · Dim & fériés : fermé',
+notes:'Horaires variables selon les sources — appelez avant. Accès fauteuil : limité',
+lat:49.2470, lng:6.9780,
+mapsQuery:'Gye+Nyame+Afro+Shop+Klausenerstraße+20+Saarbrücken' },
+{ id:'tropicana', name:'Afro Shop Tropicana / Yorongar Danmbaye Friseursalon', category:'hair',
+address:'Berliner Promenade 17, 66111 Saarbrücken (Sankt Johann)', phone:null,
+hours:'Lun–Sam : 10h00–20h00 · Dim : fermé',
+notes:'Entrée = salon de coiffure · Horaires mis à jour mai 2026',
+lat:49.2358, lng:6.9958,
+mapsQuery:'Afro+Shop+Tropicana+Berliner+Promenade+17+Saarbrücken' },
+{ id:'afro-iman', name:'Afro Shop Iman (salon de beauté)', category:'hair',
+address:'Sarrebruck (adresse exacte à confirmer)', phone:null,
+hours:'Lun–Sam : 10h00–19h30 · Dim & fériés : fermé',
+notes:'Accès fauteuil roulant : limité', lat:49.2340, lng:6.9920,
+mapsQuery:'Afro+Shop+Iman+Saarbrücken' },
+{ id:'nana', name:'Nana afro & europäische Hairstyles', category:'hair',
+address:'Proche de Ocean de Grâce Afro Shop, Sarrebruck', phone:null, hours:null,
+notes:'Adresse exacte non disponible', lat:49.2362, lng:6.9952,
+mapsQuery:'Nana+afro+Hairstyles+Saarbrücken' },
+{ id:'ahome', name:'Restaurant Ahomé 228', category:'restaurant',
+address:'Heuduckstraße 63, 66117 Saarbrücken', phone:'+49 681 68601480',
+hours:'Mar–Sam : 17h00–22h00 · Dim : 14h00–22h00 · Lun : fermé',
+notes:'Cuisine ouest-africaine (Jollof, Fufu, Light Soup, Egusi) · Sur place, à emporter, livraison, traiteur',
+lat:49.2310, lng:6.9840,
+mapsQuery:'Restaurant+Ahomé+228+Heuduckstraße+63+Saarbrücken' },
+{ id:'almaz', name:'Almaz – Anders essen', category:'restaurant',
+address:'Martin-Luther-Str. 13, 66111 Saarbrücken (St Johann)', phone:'+49 681 68863631',
+hours:'Tous les jours : 17h30–23h00',
+notes:'Accès fauteuil roulant : oui', lat:49.2372, lng:6.9968,
+mapsQuery:'Almaz+Anders+essen+Martin-Luther-Straße+13+Saarbrücken' }
+];
+
+let currentLang = 'fr';
+try { const saved = localStorage.getItem('afro_lang'); if (saved && TRANSLATIONS[saved]) currentLang = saved; } catch(e) {}
+
+function t(key) {
+const tr = TRANSLATIONS[currentLang];
+if (typeof tr[key] === 'function') return tr[key];
+return tr[key] || '';
+}
+
+function esc(s) {
+return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+{ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+));
+}
+
+const CATEGORY_META = {
+food: { class:'cat-food', emoji:'🛒', markerClass:'', transKey:'catFood' },
+hair: { class:'cat-hair', emoji:'💇', markerClass:'hair', transKey:'catHair' },
+mixed: { class:'cat-mixed', emoji:'🏪', markerClass:'mixed', transKey:'catMixed' },
+restaurant: { class:'cat-restaurant', emoji:'🍽️', markerClass:'restaurant', transKey:'catRestaurant' }
+};
+
+function getCategoryLabel(category) {
+const meta = CATEGORY_META[category];
+if (!meta) return 'Autre';
+return t(meta.transKey);
+}
+
+let currentFilter = 'all';
+let currentView = 'map';
+let map = null;
+let markersLayer = null;
+const markerById = {};
+
+function initMap() {
+if (map) return;
+map = L.map('map', { zoomControl:true, scrollWheelZoom:false }).setView([49.2380, 6.9950], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+markersLayer = L.layerGroup().addTo(map);
+}
+
+function makeMarkerIcon(category) {
+const meta = CATEGORY_META[category];
+return L.divIcon({
+className:'custom-marker-wrapper',
+html:'<div class="custom-marker ' + meta.markerClass + '"><span>' + meta.emoji + '</span></div>',
+iconSize:[32,32], iconAnchor:[16,32], popupAnchor:[0,-32]
+});
+}
+
+function refreshMarkers() {
+if (!markersLayer) return;
+markersLayer.clearLayers();
+Object.keys(markerById).forEach(k => delete markerById[k]);
+const filtered = currentFilter === 'all' ? SHOPS : SHOPS.filter(s => s.category === currentFilter);
+filtered.forEach(shop => {
+const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(shop.mapsQuery);
+const popupHtml = '<strong>' + esc(shop.name) + '</strong>' +
+'<div class="popup-addr">📍 ' + esc(shop.address) + '</div>' +
+(shop.hours ? '<div style="font-size:0.72rem;color:#777;margin-bottom:0.4rem;">🕒 ' + esc(shop.hours) + '</div>' : '') +
+'<a class="popup-btn" href="' + mapsUrl + '" target="_blank" rel="noopener">' + t('popupRoute') + '</a>' +
+(shop.phone ? '<a class="popup-btn" href="tel:' + esc(shop.phone.replace(/\s/g,'')) + '">' + t('popupCall') + '</a>' : '');
+const marker = L.marker([shop.lat, shop.lng], { icon: makeMarkerIcon(shop.category) }).bindPopup(popupHtml, { maxWidth:260 });
+marker.addTo(markersLayer);
+markerById[shop.id] = marker;
+});
+if (filtered.length > 0) {
+const bounds = L.latLngBounds(filtered.map(s => [s.lat, s.lng]));
+map.fitBounds(bounds, { padding:[40,40], maxZoom:15 });
+}
+}
+
+function renderShops() {
+const list = document.getElementById('shop-list');
+const emptyState = document.getElementById('empty-state');
+const countEl = document.getElementById('shop-count');
+const filtered = currentFilter === 'all' ? SHOPS : SHOPS.filter(s => s.category === currentFilter);
+countEl.textContent = t('count')(filtered.length);
+if (filtered.length === 0) {
+list.innerHTML = '';
+emptyState.style.display = 'block';
+return;
+}
+emptyState.style.display = 'none';
+list.innerHTML = filtered.map(shop => {
+const meta = CATEGORY_META[shop.category] || { class:'' };
+const catLabel = getCategoryLabel(shop.category);
+const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(shop.mapsQuery);
+let phoneHtml = '';
+if (shop.phone) phoneHtml = '<div class="shop-phone">📞 <a href="tel:' + esc(shop.phone.replace(/\s/g,'')) + '">' + esc(shop.phone) + '</a></div>';
+let hoursHtml = '';
+if (shop.hours) hoursHtml = '<div class="shop-hours">🕒 ' + esc(shop.hours) + '</div>';
+let notesHtml = '';
+if (shop.notes) notesHtml = '<div class="shop-notes">' + esc(shop.notes) + '</div>';
+let callBtn = '';
+if (shop.phone) callBtn = '<a class="btn-call" href="tel:' + esc(shop.phone.replace(/\s/g,'')) + '">' + t('call') + '</a>';
+return '<div class="shop-card" data-shop-id="' + esc(shop.id) + '">' +
+'<div class="shop-header">' +
+'<div class="shop-name">' + esc(shop.name) + '</div>' +
+'<span class="shop-category ' + meta.class + '">' + catLabel + '</span>' +
+'</div>' +
+'<div class="shop-address"><span>📍</span> ' + esc(shop.address) + '</div>' +
+hoursHtml + phoneHtml + notesHtml +
+'<div class="shop-actions">' +
+'<button class="btn-locate" data-locate="' + esc(shop.id) + '">' + t('seeMap') + '</button>' +
+'<a class="btn-map" href="' + mapsUrl + '" target="_blank" rel="noopener">' + t('route') + '</a>' +
+callBtn +
+'</div>' +
+'</div>';
+}).join('');
+list.querySelectorAll('[data-locate]').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+focusShopOnMap(btn.dataset.locate);
+});
+});
+}
+
+function focusShopOnMap(shopId) {
+if (currentView !== 'map') switchView('map');
+const shop = SHOPS.find(s => s.id === shopId);
+if (!shop) return;
+document.getElementById('map-wrapper').scrollIntoView({ behavior:'smooth', block:'start' });
+setTimeout(() => {
+const marker = markerById[shopId];
+if (marker && map) {
+map.setView([shop.lat, shop.lng], 16, { animate:true });
+marker.openPopup();
+}
+}, 400);
+document.querySelectorAll('.shop-card').forEach(c => c.classList.remove('highlight'));
+const card = document.querySelector('[data-shop-id="' + shopId + '"]');
+if (card) {
+card.classList.add('highlight');
+setTimeout(() => card.classList.remove('highlight'), 2500);
+}
+}
+
+function switchView(view) {
+currentView = view;
+const mapWrap = document.getElementById('map-wrapper');
+const mapBtn = document.getElementById('view-map-btn');
+const listBtn = document.getElementById('view-list-btn');
+if (view === 'map') {
+mapWrap.classList.add('visible');
+mapBtn.classList.add('active');
+listBtn.classList.remove('active');
+setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+} else {
+mapWrap.classList.remove('visible');
+listBtn.classList.add('active');
+mapBtn.classList.remove('active');
+}
+}
+
+function applyLanguage() {
+document.getElementById('t-title').textContent = t('title');
+document.getElementById('t-subtitle').textContent = t('subtitle');
+document.getElementById('t-tag1').textContent = t('tag1');
+document.getElementById('t-tag2').textContent = t('tag2');
+document.getElementById('t-tag3').textContent = t('tag3');
+document.getElementById('t-map').textContent = t('map');
+document.getElementById('t-list').textContent = t('list');
+document.getElementById('f-all').textContent = t('all');
+document.getElementById('f-food').textContent = t('food');
+document.getElementById('f-hair').textContent = t('hair');
+document.getElementById('f-mixed').textContent = t('mixed');
+document.getElementById('f-restaurant').textContent = t('restaurant');
+document.getElementById('empty-state').textContent = t('empty');
+document.getElementById('t-footer1').textContent = t('footer1');
+document.getElementById('t-footer2').textContent = t('footer2');
+document.getElementById('t-install-title').textContent = t('installTitle');
+document.getElementById('t-install-text').textContent = t('installText');
+document.getElementById('install-btn').textContent = t('installBtn');
+document.documentElement.lang = currentLang;
+document.querySelectorAll('.lang-btn').forEach(b => {
+b.classList.toggle('active', b.dataset.lang === currentLang);
+});
+renderShops();
+refreshMarkers();
+}
+
+function setLanguage(lang) {
+if (!TRANSLATIONS[lang]) return;
+currentLang = lang;
+try { localStorage.setItem('afro_lang', lang); } catch(e) {}
+applyLanguage();
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+});
+
+document.getElementById('filters').addEventListener('click', (e) => {
+const btn = e.target.closest('.filter-btn');
+if (!btn) return;
+document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+currentFilter = btn.dataset.filter;
+renderShops();
+refreshMarkers();
+});
+
+document.getElementById('view-map-btn').addEventListener('click', () => switchView('map'));
+document.getElementById('view-list-btn').addEventListener('click', () => switchView('list'));
+
+let deferredPrompt = null;
+const installBanner = document.getElementById('install-banner');
+const installBtn = document.getElementById('install-btn');
+const installClose = document.getElementById('install-close');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+e.preventDefault();
+deferredPrompt = e;
+installBanner.classList.add('visible');
+});
+
+installBtn.addEventListener('click', async () => {
+if (!deferredPrompt) return;
+deferredPrompt.prompt();
+await deferredPrompt.userChoice;
+deferredPrompt = null;
+installBanner.classList.remove('visible');
+});
+
+installClose.addEventListener('click', () => {
+installBanner.classList.remove('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+installBanner.classList.remove('visible');
+});
+
+initMap();
+applyLanguage();
+</script>
+
+</body>
+</html>
